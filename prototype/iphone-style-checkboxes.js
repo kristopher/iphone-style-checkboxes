@@ -1,5 +1,7 @@
-$.iphoneStyle = {
-  defaults: { 
+var iPhoneStyle = function(selector_or_elem, options) {
+  var text_selection_event = (Prototype.Browser.IE && 'startselect' || 'mousedown')
+  var elements = (Object.isElement(selector_or_elem) && [selector_or_elem] || $$(selector_or_elem))
+  var default_options = { 
     checkedLabel: 'ON', uncheckedLabel: 'OFF', background: '#fff',
     containerClass:    'iPhoneCheckContainer',
     labelOnClass:      'iPhoneCheckLabelOn',
@@ -7,12 +9,10 @@ $.iphoneStyle = {
     handleClass:       'iPhoneCheckHandle',
     handleSliderClass: 'iPhoneCheckHandleSlider'
   }
-}
 
-var iPhoneStyle = function(selector_or_elem, options) {
-  options = Object.extend($.iphoneStyle.defaults, options);
-  
-  return $$(selector_or_elem).each(function(elem) {
+  options = Object.extend(Object.clone(default_options), options);
+    
+  return elements.each(function(elem) {
     
     if (!elem.match('input[type=checkbox]'))
       return;
@@ -24,7 +24,6 @@ var iPhoneStyle = function(selector_or_elem, options) {
         .insert({ 'after': '<label class="' + options.labelOnClass + '">' + options.checkedLabel   + '</label>' });
     
     var handle    = elem.up().down('.' + options.handleClass),
-        handlebg  = handle.down('.' + options.handleBGClass),
         offlabel  = elem.adjacent('.' + options.labelOffClass).first(),
         onlabel   = elem.adjacent('.' + options.labelOnClass).first(),
         container = elem.up('.' + options.containerClass),
@@ -32,9 +31,9 @@ var iPhoneStyle = function(selector_or_elem, options) {
         
     
     container.observe('mouseup', function() {
-      var is_onstate = (elem.checked);
+      var is_onstate = Number(elem.checked);
     
-      new Effect.Tween(null, (is_onstate) ? 1 : 0, (is_onstate) ? 0 : 1, { duration: 0.2 }, function(p) { handle.setStyle({ left: p * rightside + 'px' }) });
+      new Effect.Tween(null, is_onstate, Number(!is_onstate), { duration: 0.2 }, function(p) { handle.setStyle({ left: p * rightside + 'px' }) });
       
       if (is_onstate) {
         offlabel.appear({ duration: 0.2 });
@@ -44,20 +43,17 @@ var iPhoneStyle = function(selector_or_elem, options) {
         onlabel.appear({ duration: 0.2 });
       }
       
-      elem.writeAttribute('checked', !is_onstate);
-      return false;
+      elem.checked = !is_onstate
     });
     
     // Disable text selection
-    [container, onlabel, offlabel, handle].invoke('observe', 'mousedown', function(e) { Event.stop(e); return false; });
-    if (Prototype.Browser.IE)
-      [container, onlabel, offlabel, handle].invoke('observe', 'startselect', function(e) { Event.stop(e); return false; });
+    [container, onlabel, offlabel, handle].invoke('observe', text_selection_event, function(e) { e.stop(); });
     
     // initial load
-    if (elem.match(':checked')) {
+    if (elem.checked) {
       offlabel.setOpacity(0);
       onlabel.setOpacity(1);
       handle.setStyle({ left: rightside + 'px'});
     }
-  });
+  }, this);
 };
